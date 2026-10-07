@@ -14,6 +14,7 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -58,6 +59,16 @@ public class GlobalExceptionHandler {
         ex.getConstraintViolations().forEach(violation ->
                 fieldErrors.put(violation.getPropertyPath().toString(), violation.getMessage()));
         return build(HttpStatus.BAD_REQUEST, "Validation failed", request, fieldErrors);
+    }
+
+    /**
+     * A path variable such as /v1/contact-messages/unread-count cannot bind to a
+     * Long id, which would otherwise fall through to a 500.
+     */
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiError> handleTypeMismatch(MethodArgumentTypeMismatchException ex,
+                                                       HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, "'" + ex.getName() + "' has an invalid value", request, null);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)

@@ -47,13 +47,13 @@ public class AdminKeyInterceptor implements HandlerInterceptor {
         return true;
     }
 
-    private boolean isPublic(Object handler) {
-        if (!(handler instanceof HandlerMethod handlerMethod)) {
-            return false;
+        private boolean isPublic(Object handler) {
+            if (!(handler instanceof HandlerMethod handlerMethod)) {
+                return false;
+            }
+            return AnnotatedElementUtils.hasAnnotation(handlerMethod.getMethod(), PublicEndpoint.class)
+                    || AnnotatedElementUtils.hasAnnotation(handlerMethod.getBeanType(), PublicEndpoint.class);
         }
-        return AnnotatedElementUtils.hasAnnotation(handlerMethod.getMethod(), PublicEndpoint.class)
-                || AnnotatedElementUtils.hasAnnotation(handlerMethod.getBeanType(), PublicEndpoint.class);
-    }
 
     /**
      * Compares in constant time so response timing cannot be used to guess the key.
