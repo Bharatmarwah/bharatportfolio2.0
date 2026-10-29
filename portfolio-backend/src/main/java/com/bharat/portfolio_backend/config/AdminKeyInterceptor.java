@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.annotation.AnnotatedElementUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.cors.CorsUtils;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
@@ -31,6 +32,11 @@ public class AdminKeyInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) {
+        // Browsers never send custom headers (such as X-Admin-Key) on a CORS
+        // preflight, so let Spring's CORS handler answer OPTIONS requests.
+        if (CorsUtils.isPreFlightRequest(request)) {
+            return true;
+        }
         if (isPublic(handler)) {
             return true;
         }

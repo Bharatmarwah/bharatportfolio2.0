@@ -23,7 +23,7 @@ public class ContactMessageNotificationListener {
         this.mailService = mailService;
     }
 
-    @Async
+    @Async("contactMessageExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     public void onContactMessageReceived(ContactMessageReceivedEvent event) {
         try {

@@ -88,4 +88,9 @@ public class Profile extends BaseEntity {
             cascade = CascadeType.ALL,
             orphanRemoval = true)
     private List<Certificate> certifications = new ArrayList<>();
+
+    @OneToMany(mappedBy = "profile",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true)
+    private List<BlogPost> blogPosts = new ArrayList<>();
 }

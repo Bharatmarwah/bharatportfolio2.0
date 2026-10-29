@@ -4,6 +4,7 @@ import com.bharat.portfolio_backend.entity.Project;
 import com.bharat.portfolio_backend.enums.ProjectStatus;
 import com.bharat.portfolio_backend.enums.Visibility;
 import com.bharat.portfolio_backend.exception.DuplicateResourceException;
+import com.bharat.portfolio_backend.exception.InvalidRequestException;
 import com.bharat.portfolio_backend.exception.ResourceNotFoundException;
 import com.bharat.portfolio_backend.repository.ProjectRepository;
 import com.bharat.portfolio_backend.requestDto.ProjectRequest;
@@ -12,7 +13,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Service
 public class ProjectService {
@@ -95,6 +99,10 @@ public class ProjectService {
     }
 
     private void apply(Project project, ProjectRequest request) {
+        if (request.startDate() != null && request.endDate() != null
+                && request.endDate().isBefore(request.startDate())) {
+            throw new InvalidRequestException("endDate must not be before startDate");
+        }
         project.setName(request.name().trim());
         project.setHeadline(request.headline().trim());
         project.setDescription(request.description());
@@ -122,12 +130,21 @@ public class ProjectService {
         return values.stream()
                 .filter(value -> value != null && !value.isBlank())
                 .map(String::trim)
-                .toList();
+                // Hibernate needs a mutable collection when it re-attaches the
+                // element collection on update; Stream.toList() is immutable.
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 
     private Project require(Long id) {
         return projectRepository.findById(id)
                 .orElseThrow(() -> ResourceNotFoundException.of("Project", id));
+    }
+
+    private static List<String> safeCopy(Collection<String> values) {
+        if (values == null) {
+            return List.of();
+        }
+        return values.stream().filter(Objects::nonNull).toList();
     }
 
     static ProjectResponse toResponse(Project project) {
@@ -146,8 +163,8 @@ public class ProjectService {
                 project.getLiveUrl(),
                 project.getDemoVideoUrl(),
                 project.getCoverImageUrl(),
-                List.copyOf(project.getImagesUrl()),
-                List.copyOf(project.getHighlights()),
+                safeCopy(project.getImagesUrl()),
+                safeCopy(project.getHighlights()),
                 TechnologyService.toResponses(project.getTechnologies()),
                 project.getStartDate(),
                 project.getEndDate(),

@@ -10,10 +10,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.ErrorResponse;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -43,6 +46,11 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request, null);
     }
 
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<ApiError> handleInvalidRequest(InvalidRequestException ex, HttpServletRequest request) {
+        return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request, null);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
         Map<String, String> fieldErrors = new LinkedHashMap<>();
@@ -58,6 +66,23 @@ public class GlobalExceptionHandler {
         Map<String, String> fieldErrors = new LinkedHashMap<>();
         ex.getConstraintViolations().forEach(violation ->
                 fieldErrors.put(violation.getPropertyPath().toString(), violation.getMessage()));
+        return build(HttpStatus.BAD_REQUEST, "Validation failed", request, fieldErrors);
+    }
+
+    /**
+     * Spring 6.1+ validates @RequestParam / @PathVariable constraints through this
+     * exception rather than ConstraintViolationException.
+     */
+    @ExceptionHandler(HandlerMethodValidationException.class)
+    public ResponseEntity<ApiError> handleHandlerMethodValidation(HandlerMethodValidationException ex,
+                                                                  HttpServletRequest request) {
+        Map<String, String> fieldErrors = new LinkedHashMap<>();
+        ex.getParameterValidationResults().forEach(result -> {
+            String parameter = result.getMethodParameter().getParameterName();
+            result.getResolvableErrors().forEach(error ->
+                    fieldErrors.putIfAbsent(parameter == null ? "parameter" : parameter,
+                            error.getDefaultMessage()));
+        });
         return build(HttpStatus.BAD_REQUEST, "Validation failed", request, fieldErrors);
     }
 
@@ -106,10 +131,33 @@ public class GlobalExceptionHandler {
                 "Content-Type must be application/json", request, null);
     }
 
+    /**
+     * Spring MVC exceptions (missing query parameter, unacceptable media type, ...)
+     * already carry the right status; without this check the catch-all below would
+     * turn those client mistakes into 500s.
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleUnexpected(Exception ex, HttpServletRequest request) {
+        if (ex instanceof ErrorResponse errorResponse) {
+            HttpStatus status = HttpStatus.resolve(errorResponse.getStatusCode().value());
+            if (status == null) {
+                status = HttpStatus.BAD_REQUEST;
+            }
+            String detail = errorResponse.getBody().getDetail();
+            return build(status, detail == null || detail.isBlank() ? status.getReasonPhrase() : detail,
+                    request, null);
+        }
         log.error("Unexpected failure on {} {}", request.getMethod(), request.getRequestURI(), ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", request, null);
+    }
+
+    /**
+     * A visitor closing the browser before the response is written is normal and
+     * must not be logged as a server failure.
+     */
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleClientDisconnect(AsyncRequestNotUsableException ex) {
+        log.debug("Client disconnected before the response could be written: {}", ex.getMessage());
     }
 
     private ResponseEntity<ApiError> build(HttpStatus status, String message, HttpServletRequest request,

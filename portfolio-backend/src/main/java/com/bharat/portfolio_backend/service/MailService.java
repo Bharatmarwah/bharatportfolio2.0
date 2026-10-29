@@ -39,10 +39,21 @@ public class MailService {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setFrom(from);
         message.setTo(request.to());
-        message.setSubject(request.subject());
+        message.setSubject(sanitizeHeader(request.subject()));
         message.setText(request.body());
         javaMailSender.send(message);
         log.info("Mail sent to {}", request.to());
+    }
+
+    /**
+     * Subject values include visitor-supplied text, so strip CR/LF to stop header
+     * injection (for example a subject containing "\r\nBcc: attacker@example.com").
+     */
+    static String sanitizeHeader(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.replaceAll("[\\r\\n]+", " ").trim();
     }
 
     public String notificationRecipient() {

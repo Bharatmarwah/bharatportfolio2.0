@@ -3,16 +3,20 @@ package com.bharat.portfolio_backend.controller;
 import com.bharat.portfolio_backend.config.PublicEndpoint;
 import com.bharat.portfolio_backend.requestDto.ProfileRequest;
 import com.bharat.portfolio_backend.requestDto.SocialLinkRequest;
+import com.bharat.portfolio_backend.responseDto.BlogPostSummaryResponse;
 import com.bharat.portfolio_backend.responseDto.CertificateResponse;
 import com.bharat.portfolio_backend.responseDto.ProfileResponse;
 import com.bharat.portfolio_backend.responseDto.ProjectResponse;
 import com.bharat.portfolio_backend.responseDto.SkillResponse;
 import com.bharat.portfolio_backend.responseDto.SocialLinkResponse;
+import com.bharat.portfolio_backend.service.BlogPostService;
 import com.bharat.portfolio_backend.service.CertificateService;
 import com.bharat.portfolio_backend.service.ProfileService;
 import com.bharat.portfolio_backend.service.ProjectService;
 import com.bharat.portfolio_backend.service.SkillService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -29,19 +33,24 @@ import java.util.List;
 @RequestMapping("/v1/me")
 public class ProfileController {
 
+    private static final int MAX_PAGE_SIZE = 50;
+
     private final ProfileService profileService;
     private final ProjectService projectService;
     private final SkillService skillService;
     private final CertificateService certificateService;
+    private final BlogPostService blogPostService;
 
     public ProfileController(ProfileService profileService,
                              ProjectService projectService,
                              SkillService skillService,
-                             CertificateService certificateService) {
+                             CertificateService certificateService,
+                             BlogPostService blogPostService) {
         this.profileService = profileService;
         this.projectService = projectService;
         this.skillService = skillService;
         this.certificateService = certificateService;
+        this.blogPostService = blogPostService;
     }
 
     /**
@@ -91,5 +100,17 @@ public class ProfileController {
     @GetMapping("/certifications")
     public List<CertificateResponse> listAllCertifications() {
         return certificateService.findAll(true);
+    }
+
+    /**
+     * Admin blog index including drafts and archived posts. The public index lives
+     * at GET /v1/blog and only ever returns PUBLISHED posts.
+     */
+    @GetMapping("/blog")
+    public Page<BlogPostSummaryResponse> listAllBlogPosts(@RequestParam(defaultValue = "0") int page,
+                                                          @RequestParam(defaultValue = "20") int size) {
+        int safeSize = Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        int safePage = Math.max(page, 0);
+        return blogPostService.findAll(PageRequest.of(safePage, safeSize));
     }
 }

@@ -2,6 +2,7 @@ package com.bharat.portfolio_backend.service;
 
 import com.bharat.portfolio_backend.entity.Certificate;
 import com.bharat.portfolio_backend.enums.Visibility;
+import com.bharat.portfolio_backend.exception.InvalidRequestException;
 import com.bharat.portfolio_backend.exception.ResourceNotFoundException;
 import com.bharat.portfolio_backend.repository.CertificateRepository;
 import com.bharat.portfolio_backend.requestDto.CertificateRequest;
@@ -60,6 +61,10 @@ public class CertificateService {
     }
 
     private void apply(Certificate certificate, CertificateRequest request) {
+        if (request.issueDate() != null && request.expiryDate() != null
+                && request.expiryDate().isBefore(request.issueDate())) {
+            throw new InvalidRequestException("expiryDate must not be before issueDate");
+        }
         certificate.setName(request.name().trim());
         certificate.setSourceName(request.sourceName().trim());
         certificate.setSourceUrl(TechnologyService.blankToNull(request.sourceUrl()));
