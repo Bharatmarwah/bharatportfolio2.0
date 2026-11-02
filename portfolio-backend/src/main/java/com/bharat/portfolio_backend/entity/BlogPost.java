@@ -55,10 +55,12 @@ public class BlogPost extends BaseEntity {
     private String excerpt;
 
     /**
-     * Markdown/HTML body. LONGTEXT so long tutorials do not hit the VARCHAR limit.
+     * Markdown/HTML body. TEXT is unbounded on PostgreSQL and 64 KB on MySQL —
+     * either way it stays clear of the VARCHAR limit, and it is portable
+     * (LONGTEXT is MySQL-only and breaks PostgreSQL DDL).
      */
     @NotBlank
-    @Column(nullable = false, columnDefinition = "LONGTEXT")
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @Column(name = "cover_image_url", length = 500)

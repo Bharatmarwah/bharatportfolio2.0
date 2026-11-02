@@ -24,7 +24,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/v1/blog")
 public class BlogPostController {
 
-    private static final int MAX_PAGE_SIZE = 50;
+    /**
+     * The journal index is filtered client-side (search + facets), so the front
+     * end requests one large page. Keep this in sync with BLOG_FETCH_SIZE in
+     * portfolio-frontend/src/lib/api.ts.
+     */
+    private static final int MAX_PAGE_SIZE = 200;
 
     private final BlogPostService blogPostService;
 

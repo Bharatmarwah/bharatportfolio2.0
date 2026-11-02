@@ -1,6 +1,6 @@
 package com.bharat.portfolio_backend.requestDto;
 
-import com.bharat.portfolio_backend.enums.PostStatus;
+import  com.bharat.portfolio_backend.enums.PostStatus;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

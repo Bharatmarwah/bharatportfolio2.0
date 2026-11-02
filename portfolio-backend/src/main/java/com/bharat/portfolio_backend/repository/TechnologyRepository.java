@@ -15,5 +15,5 @@ public interface TechnologyRepository extends JpaRepository<Technology, Long> {
 
     List<Technology> findByNameInIgnoreCase(Collection<String> names);
 
-    List<Technology> findAllByOrderByNameAsc();
+    List<Technology> findAllByOrderByDisplayOrderAsc();
 }

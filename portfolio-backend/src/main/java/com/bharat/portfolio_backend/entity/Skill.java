@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinTable;
 import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -51,6 +52,7 @@ public class Skill extends BaseEntity {
     @JoinTable(name = "skill_technologies",
             joinColumns = @JoinColumn(name = "skill_id"),
             inverseJoinColumns = @JoinColumn(name = "technology_id"))
+    @OrderBy("displayOrder ASC")
     private Set<Technology> technologies = new LinkedHashSet<>();
 
     @Enumerated(EnumType.STRING)

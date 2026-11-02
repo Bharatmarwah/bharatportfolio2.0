@@ -42,4 +42,7 @@ public class Technology extends BaseEntity {
 
     @Column(name = "website_url")
     private String websiteUrl;
+
+    @Column(name = "display_order", nullable = false, columnDefinition = "integer not null default 0")
+    private int displayOrder = 0;
 }

@@ -8,6 +8,7 @@ public record TechnologyResponse(
         TechnologyCategory category,
         String iconUrl,
         String colorHex,
-        String websiteUrl
+        String websiteUrl,
+        int displayOrder
 ) {
 }

@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -30,7 +31,7 @@ public class TechnologyService {
 
     @Transactional(readOnly = true)
     public List<TechnologyResponse> findAll() {
-        return technologyRepository.findAllByOrderByNameAsc().stream()
+        return technologyRepository.findAllByOrderByDisplayOrderAsc().stream()
                 .map(TechnologyService::toResponse)
                 .toList();
     }
@@ -123,6 +124,9 @@ public class TechnologyService {
         technology.setIconUrl(blankToNull(request.iconUrl()));
         technology.setColorHex(blankToNull(request.colorHex()));
         technology.setWebsiteUrl(blankToNull(request.websiteUrl()));
+        if (request.displayOrder() != null) {
+            technology.setDisplayOrder(request.displayOrder());
+        }
     }
 
     private Technology require(Long id) {
@@ -141,12 +145,14 @@ public class TechnologyService {
                 technology.getCategory(),
                 technology.getIconUrl(),
                 technology.getColorHex(),
-                technology.getWebsiteUrl());
+                technology.getWebsiteUrl(),
+                technology.getDisplayOrder());
     }
 
     static List<TechnologyResponse> toResponses(Collection<Technology> technologies) {
         return technologies.stream()
-                .sorted((left, right) -> left.getName().compareToIgnoreCase(right.getName()))
+                .sorted(Comparator.comparingInt(Technology::getDisplayOrder)
+                        .thenComparing(Technology::getName, String.CASE_INSENSITIVE_ORDER))
                 .map(TechnologyService::toResponse)
                 .toList();
     }
